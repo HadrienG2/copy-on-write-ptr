@@ -56,7 +56,8 @@ class cow_ownership_flag {
    
       // Acquire ownership of the active memory block once, using the provided resource acquisition routine,
       // if that's not done already. Have other threads block during this process.
-      void acquire_ownership_once(std::function<void()> acquire) {
+      template<typename Callable>
+      void acquire_ownership_once(Callable && acquire) {
          std::lock_guard<std::mutex> lock(m_ownership_mutex);
          if(!m_owned) {
             acquire();
