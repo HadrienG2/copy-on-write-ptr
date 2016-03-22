@@ -2,7 +2,8 @@
 #define COW_PTR_H
 
 #include <memory>
-#include <mutex>
+
+#include "cow_ownership_flag.hpp"
 
 // The cow_ptr class implements copy-on-write semantics on top of std::shared_ptr
 template<typename T>
@@ -13,23 +14,19 @@ class cow_ptr {
       // Construct a cow_ptr from a raw pointer, acquire ownership
       cow_ptr(T * ptr) :
          m_payload{ptr},
-         m_ownership_flag{}
-      {
-         acquire_ownership();
-      }
+         m_ownership{true}
+      { }
       
       // Move-construct from a cow_ptr, acquire ownership
       cow_ptr(cow_ptr<T> && cptr) :
          m_payload{cptr.m_payload},
-         m_ownership_flag{}
-      {
-         acquire_ownership();
-      }
+         m_ownership{true}
+      { }
       
       // Copy-construct from a cow_ptr, DO NOT acquire ownership
       cow_ptr(const cow_ptr<T> & cptr) :
          m_payload{cptr.m_payload},
-         m_ownership_flag{}
+         m_ownership{false}
       { }
       
       // All our data members can take care of themselves on their own
@@ -57,16 +54,11 @@ class cow_ptr {
 
    private:
       std::shared_ptr<T> m_payload;
-      std::once_flag m_ownership_flag;
-      
-      // Mark ourserlves as the owner of the payload object
-      void acquire_ownership() {
-         std::call_once(m_ownership_flag, [](){});
-      }
+      cow_ownership_flag m_ownership;
       
       // If we are not the owner of the payload object, make a private copy of it
       void copy_if_not_owner() {
-         std::call_once(m_ownership_flag, [this](){
+         m_ownership.acquire_ownership_once([this](){
             m_payload = std::make_shared<T>(*m_payload);
          });
       }

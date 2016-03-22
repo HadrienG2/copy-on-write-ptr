@@ -1,0 +1,52 @@
+=== VERSION AVEC STD::ONCE_FLAG ===
+
+Creating 20000000 pointers from raw pointers
+With a raw shared_ptr, this operation takes 2.10385 s
+With cow_ptr, it takes 5.29563 s (2.51711x slower)
+
+Creating AND moving 100000000 pointers
+With a raw shared_ptr, this operation takes 13.5634 s
+With cow_ptr, it takes 45.7958 s (3.37642x slower)
+
+Copying 40000000 pointers
+With a raw shared_ptr, this operation takes 2.292 s
+With cow_ptr, it takes 2.71524 s (1.18466x slower)
+
+Reading from 128000000 pointers
+With a raw shared_ptr, this operation takes 2.30456 s
+With cow_ptr, it takes 2.55358 s (1.10806x slower)
+
+Performing 200000000 pointer copies AND cold writes
+With a raw shared_ptr, this operation takes 11.1385 s
+With cow_ptr, it takes 108.648 s (9.75427x slower)
+
+Performing 800000000 warm pointer writes
+With a raw shared_ptr, this operation takes 14.4702 s
+With cow_ptr, it takes 46.8538 s (3.23795x slower)
+
+
+=== COW_OWNERSHIP_FLAG BASE SUR UN MUTEX ===
+
+Creating 20000000 pointers from raw pointers
+With a raw shared_ptr, this operation takes 2.31504 s
+With cow_ptr, it takes 2.48566 s (1.0737x slower)        => 2.34x plus rapide (synchronisation inutile supprimée)
+
+Creating AND moving 100000000 pointers
+With a raw shared_ptr, this operation takes 14.2057 s
+With cow_ptr, it takes 17.8608 s (1.2573x slower)        => 2.69x plus rapide (synchronisation inutile supprimée)
+
+Copying 40000000 pointers
+With a raw shared_ptr, this operation takes 2.30163 s
+With cow_ptr, it takes 2.75951 s (1.19894x slower)       => Equivalent (pas de synchronisation avant)
+
+Reading from 128000000 pointers
+With a raw shared_ptr, this operation takes 2.30476 s
+With cow_ptr, it takes 2.55297 s (1.10769x slower)       => Equivalent (pas de synchronisation avant)
+
+Performing 200000000 pointer copies AND cold writes
+With a raw shared_ptr, this operation takes 10.9271 s
+With cow_ptr, it takes 94.1523 s (8.61639x slower)       => 1.13x plus rapide (synchronisation plus efficace)
+
+Performing 800000000 warm pointer writes
+With a raw shared_ptr, this operation takes 14.4376 s
+With cow_ptr, it takes 81.401 s (5.63815x slower)        => 0.57x plus rapide (synchronisation MOINS efficace !!!)
