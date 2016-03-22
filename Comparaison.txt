@@ -77,3 +77,38 @@ With cow_ptr, it takes 97.6073 s (8.93506x slower)
 Performing 800000000 warm pointer writes
 With a raw shared_ptr, this operation takes 14.2464 s
 With cow_ptr, it takes 76.3853 s (5.36174x slower)
+
+
+=== COW_OWNERSHIP_FLAG BASE SUR DES ATOMICS AVEC MEMORY_ORDER SOIGNE ===
+
+Creating 20000000 pointers from raw pointers
+With a raw shared_ptr, this operation takes 2.28105 s
+With cow_ptr, it takes 2.60617 s (1.14253x slower)
+
+Creating AND moving 100000000 pointers
+With a raw shared_ptr, this operation takes 13.9653 s
+With cow_ptr, it takes 19.6988 s (1.41056x slower)
+
+Copying 40000000 pointers
+With a raw shared_ptr, this operation takes 2.31718 s
+With cow_ptr, it takes 2.8272 s (1.2201x slower)
+
+Reading from 128000000 pointers
+With a raw shared_ptr, this operation takes 2.30769 s
+With cow_ptr, it takes 2.55808 s (1.1085x slower)
+
+Performing 200000000 pointer copies AND cold writes
+With a raw shared_ptr, this operation takes 10.9183 s
+With cow_ptr, it takes 95.8352 s (8.77749x slower)
+
+Performing 800000000 warm pointer writes
+With a raw shared_ptr, this operation takes 14.3844 s
+With cow_ptr, it takes 70.4739 s (4.89933x slower)
+
+
+=== CONCLUSION ===
+
+Pour ces scénarios, certes limités, les variables atomiques n'apportent qu'un bénéfice minimal par rapport aux
+mutex compte tenu de leur complexité d'utilisation.
+
+Il semble préférable de rester sur un mutex.

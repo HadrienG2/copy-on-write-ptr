@@ -67,17 +67,20 @@ class cow_ownership_flag {
          // Try to switch the ownership status from NotOwner to AcquiringOwnership, and tell previous status
          OwnershipStatusType previous_ownership = NotOwner;
          m_ownership_status.compare_exchange_strong(previous_ownership,
-                                                    AcquiringOwnership);  // TODO : Specify memory ordering
+                                                    AcquiringOwnership,
+                                                    std::memory_order_acq_rel,
+                                                    std::memory_order_consume);
          
          // Act according to the previous ownership status
          switch(previous_ownership) {
             case NotOwner:  // Acquire resource ownership
                acquisition_routine();
-               m_ownership_status.store(Owner);  // TODO : Specify memory ordering
+               m_ownership_status.store(Owner,
+                                        std::memory_order_acq_rel);
                break;
                
             case AcquiringOwnership:  // Wait for ownership acquisition
-               while(m_ownership_status.load() != Owner);  // TODO : Specify memory ordering
+               while(m_ownership_status.load(std::memory_order_consume) != Owner);
                break;
                
             case Owner:  // Nothing to do, we already own the resource
@@ -97,17 +100,19 @@ class cow_ownership_flag {
       OwnershipStatusType unsynchronized_status() { return m_ownership_status.load(std::memory_order_relaxed); }
       
       void set_ownership_status(const OwnershipStatusType desired_ownership) {
-         OwnershipStatusType current_ownership;
+         OwnershipStatusType current_ownership = m_ownership_status.load(std::memory_order_consume);
          
          do {
             // If we are currently acquiring resource ownership, wait for that operation to complete
-            do {
-               current_ownership = m_ownership_status.load();  // TODO : Specify memory ordering
-            } while(current_ownership == AcquiringOwnership);
+            while(current_ownership == AcquiringOwnership) {
+               current_ownership = m_ownership_status.load(std::memory_order_consume);
+            }
          
             // Once that is done, try to swap in the new resource ownership status
          } while(m_ownership_status.compare_exchange_weak(current_ownership,
-                                                          desired_ownership));  // TODO : Specify memory ordering
+                                                          desired_ownership,
+                                                          std::memory_order_acq_rel,
+                                                          std::memory_order_consume));
       }
       
 };
