@@ -1,37 +1,24 @@
-#include <chrono>
-#include <functional>
 #include <iostream>
 #include <memory>
 
 #include "copy_on_write_ptr.hpp"
+#include "shared.hpp"
 
 // === FORWARD DECLARATIONS ===
 
-// Some forward declarations required to use std::chrono's timing functions
-using Clock = std::chrono::system_clock;
-using Duration = std::chrono::duration<float>;
+// Import shared definitions
+using namespace Shared;
 
-// Generic timer for performance measurement purposes
-template <typename DurationType = Duration>
-DurationType time_it(const std::function<void()> & operation,
-                     const std::size_t amount) {
-   std::chrono::time_point<Clock> start_time, end_time;
-   start_time = Clock::now();
-   for(size_t i = 0; i < amount; ++i) {
-      operation();
-   }
-   end_time = Clock::now();
-   return end_time - start_time;
-}
-
-// Specialization for my comparison purposes
-void compare_it(const std::function<void()> & shptr_operation,
-                const std::function<void()> & cowptr_operation,
+// Specialization of time_it for my comparison purposes
+template<typename Callable1,
+         typename Callable2>
+void compare_it(Callable1 && shptr_operation,
+                Callable2 && cowptr_operation,
                 const std::size_t amount) {
-   const auto shptr_duration = time_it(shptr_operation, amount);
+   const auto shptr_duration = Shared::time_it(shptr_operation, amount);
    std::cout << "With a raw shared_ptr, this operation takes " << shptr_duration.count() << " s" << std::endl;
    
-   const auto cowptr_duration = time_it(cowptr_operation, amount);
+   const auto cowptr_duration = Shared::time_it(cowptr_operation, amount);
    std::cout << "With cow_ptr, it takes " << cowptr_duration.count() << " s ("
              << cowptr_duration.count() / shptr_duration.count() << "x slower)" << std::endl;
 }
@@ -42,35 +29,33 @@ int main() {
 
    // === PART 0 : TEST-WIDE DEFINITIONS ===
 
-   // Define the expected contents of our cow_ptr
-   using Data = int;
-   const Data typical_value = 42;
+   // Define our smart pointer types
    using SharedPointer = std::shared_ptr<Data>;
-   using COWPointer = copy_on_write_ptr<Data>;
+   using COWPointer = copy_on_write_ptr<Data, cow_ownership_flags::thread_unsafe_flag>;
    
    // Say hi :)
    std::cout << std::endl << "=== Microbenchmarking cow_ptr ===" << std::endl;
 
    // === PART 1 : CREATION FROM RAW POINTER ===
    
-   const size_t creation_amount = 1000 * 1000 * 20;
+   const size_t creation_amount = 1000 * 1000 * 100;
    std::cout << std::endl << "Creating " << creation_amount << " pointers from raw pointers" << std::endl;
    {
       compare_it(
          [&](){
-            const SharedPointer ptr{new Data{typical_value}};
+            SharedPointer ptr{new Data{typical_value}};
          },
          [&](){
-            const COWPointer ptr{new Data{typical_value}};
+            COWPointer ptr{new Data{typical_value}};
          },
          creation_amount
       );
    }
    
-   // === PART 2 : CREATION + MOVE ===  (NOTE: Cannot test move alone yet, as that requires assignment operators)
+   // === PART 2 : CREATION + MOVE-CONSTRUCTION ===  (NOTE: Cannot test move construction alone easily)
    
-   const size_t move_amount = 5 * creation_amount;
-   std::cout << std::endl << "Creating AND moving " << move_amount << " pointers" << std::endl;
+   const size_t move_amount = 25 * creation_amount;
+   std::cout << std::endl << "Creating AND move-constructing " << move_amount << " pointers" << std::endl;
    {
       compare_it(
          [&](){
@@ -87,8 +72,8 @@ int main() {
    
    // === PART 3 : COPY CONSTRUCTION ===
    
-   const size_t copy_amount = 1000 * 1000 * 40;
-   std::cout << std::endl << "Copying " << copy_amount << " pointers" << std::endl;
+   const size_t copy_amount = 1000 * 1000 * 1000;
+   std::cout << std::endl << "Copy-constructing " << copy_amount << " pointers" << std::endl;
    {
       const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
       const COWPointer source_cowptr{new Data{typical_value}};
@@ -104,9 +89,55 @@ int main() {
       );
    }
    
-   // === PART 4 : READ DATA ===
+   // === PART 4 : COPY CONSTRUCTION + MOVE-ASSIGNMENT ===  (NOTE: Cannot test move assignment alone easily)
    
-   const size_t read_amount = 1000 * 1000 * 128;
+   const size_t copy_move_amount = 5 * copy_amount;
+   std::cout << std::endl << "Copy-constructing AND move-assigning " << copy_move_amount << " pointers" << std::endl;
+   {
+      const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
+      const COWPointer source_cowptr{new Data{typical_value}};
+      
+      SharedPointer dest_shptr{source_shptr};
+      COWPointer dest_cowptr{source_cowptr};
+      
+      compare_it(
+         [&](){
+            SharedPointer copy{source_shptr};
+            dest_shptr = std::move(copy);
+         },
+         [&](){
+            COWPointer copy{source_cowptr};
+            dest_cowptr = std::move(copy);
+         },
+         copy_move_amount
+      );
+   }
+   
+   // === PART 5 : COPY ASSIGNMENT ===
+   
+   const size_t copy_assign_amount = 1000 * 1000 * 64;
+   std::cout << std::endl << "Copy-assigning " << copy_assign_amount << " pointers" << std::endl;
+   {
+      const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
+      const COWPointer source_cowptr{new Data{typical_value}};
+      
+      SharedPointer dest_shptr{source_shptr};
+      COWPointer dest_cowptr{source_cowptr};
+      
+      compare_it(
+         [&](){
+            dest_shptr = source_shptr;
+         },
+         [&](){
+            dest_cowptr = source_cowptr;
+         },
+         copy_assign_amount
+      );
+   }
+   
+   // === PART 6 : READ DATA ===
+   
+   const size_t read_amount = 1000 * 1000 * 1024;
    std::cout << std::endl << "Reading from " << read_amount << " pointers" << std::endl;
    {
       const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
@@ -123,30 +154,33 @@ int main() {
       );
    }
    
-   // === PART 5 : COPY + COLD WRITES ===  (NOTE: A pure cold write would require breaking encapsulation)
+   // === PART 7 : COPY ASSIGNMENT + COLD WRITES ===  (NOTE: A pure cold write would require breaking encapsulation)
    
-   const size_t cold_write_amount = 5 * copy_amount;
+   const size_t cold_write_amount = 30 * copy_assign_amount;
    std::cout << std::endl << "Performing " << cold_write_amount << " pointer copies AND cold writes" << std::endl;
    {
       const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
       const COWPointer source_cowptr{new Data{typical_value}};
       
+      SharedPointer dest_shptr{source_shptr};
+      COWPointer dest_cowptr{source_cowptr};
+      
       compare_it(
          [&](){
-            SharedPointer dest_shptr{source_shptr};
+            dest_shptr = source_shptr;
             *dest_shptr = typical_value;
          },
          [&](){
-            COWPointer dest_cowptr{source_cowptr};
+            dest_cowptr = source_cowptr;
             dest_cowptr.write(typical_value);
          },
          cold_write_amount
       );
    }
    
-   // === PART 6 : WARM WRITES ===
+   // === PART 8 : WARM WRITES ===
 
-   const size_t warm_write_amount = 4 * cold_write_amount;
+   const size_t warm_write_amount = cold_write_amount;
    std::cout << std::endl << "Performing " << warm_write_amount << " warm pointer writes" << std::endl;
    {
       SharedPointer shptr{std::make_shared<Data>(typical_value)};

@@ -1,0 +1,107 @@
+=== MICROBENCHMARK : THREAD-UNSAFE COW POINTER VS RAW SHARED_PTR ===
+
+hadrien@pc-grasland:~/Bureau/Programmation/TestCoW$ g++ -O0 -std=c++11 bench_vs_shared_ptr.cpp -o bench_vs_shared_ptr.bin && ./bench_vs_shared_ptr.bin
+[...]
+
+Creating 100000000 pointers from raw pointers
+With a raw shared_ptr, this operation takes 8.90243 s
+With cow_ptr, it takes 9.61892 s (1.08048x slower)
+
+Creating AND move-constructing 2500000000 pointers
+With a raw shared_ptr, this operation takes 287.83 s
+With cow_ptr, it takes 372.257 s (1.29332x slower)
+
+Copy-constructing 1000000000 pointers
+With a raw shared_ptr, this operation takes 40.6132 s
+With cow_ptr, it takes 51.7203 s (1.27349x slower)
+
+Copy-constructing AND move-assigning 5000000000 pointers
+With a raw shared_ptr, this operation takes 421.153 s
+With cow_ptr, it takes 475.942 s (1.13009x slower)
+
+Copy-assigning 64000000 pointers
+With a raw shared_ptr, this operation takes 0.761626 s
+With cow_ptr, it takes 1.04287 s (1.36926x slower)
+
+Reading from 1024000000 pointers
+With a raw shared_ptr, this operation takes 4.53096 s
+With cow_ptr, it takes 7.18967 s (1.58679x slower)
+
+Performing 1920000000 pointer copies AND cold writes
+With a raw shared_ptr, this operation takes 26.1822 s
+With cow_ptr, it takes 595.358 s (22.7391x slower)
+
+Performing 1920000000 warm pointer writes
+With a raw shared_ptr, this operation takes 14.4424 s
+With cow_ptr, it takes 21.1928 s (1.4674x slower)
+
+
+=== RESULTS ANALYSIS ===
+
+When interpreting the results of this test, one should be mindful of three things:
+   - The amount of operations is not constant, but optimized per-test to get a measurement uncertainty of a few percents
+   - The benchmark is built at -O0 optimization, and may not follow -O3 performance (which is much harder to benchmark)
+   - Some operations are composite, i.e. made of multiple inner operations that must be separated.
+
+Moves are an example of a composite operation: it is quite hard to build a stateless and lightweight benchmark which
+measures the performance of moving a piece of data back and forth between two locations. Instead, what is done is to
+measure the overhead of creating + moving a piece of data, then substract the overhead of data creation alone from it.
+
+This is how it is done for move-construction...
+
+   shared_ptr creation takes 89.0ns
+   copy_on_write_ptr creation takes 96.2ns
+   shared_ptr creation and move-construction takes 116ns
+   copy_on_write_ptr creation and move-construction takes 149ns
+   
+   therefore,
+   
+   shared_ptr move-construction takes 27ns
+   copy_on_write_ptr move-construction takes 53ns
+   
+   hence the later is 2.0x slower
+
+...and for move-assignment:
+
+   shared_ptr copy-construction takes 40.6ns
+   copy_on_write_ptr copy-construction takes 51.7ns
+   shared_ptr copy-construction and move-assignment takes 84.2ns
+   copy_on_write_ptr copy-construction and move-assignment takes 95.2ns
+   
+   therefore,
+   
+   shared_ptr move-assignment takes 44ns
+   copy_on_write_ptr move-assignment takes 44ns
+   
+   hence the later is 1.0x slower
+
+Finally, by the very nature of the copy-on-write abstraction, cold writes may also only be measured in a composite way:
+
+   shared_ptr copy-assignment takes 11.9ns
+   copy_on_write_ptr copy-assignment takes 16.3ns
+   shared_ptr copy-assignment and cold write takes 13.6ns
+   copy_on_write_ptr copy-assignment and cold write takes 310ns
+   
+   therefore,
+   
+   shared_ptr cold write takes 1.7ns
+   copy_on_write_ptr cold write takes 294ns
+   
+   hence the later is 173x slower
+
+
+=== CONCLUSIONS ===
+
+In terms of elementary operations, before compiler optimization kicks in...
+   * Creation from a raw pointer is 1.1x slower
+   * Move-constructing is 2.0x slower
+   * Copy-constructing is 1.3x slower
+   * Moving is 1.0x slower
+   * Copying is 1.4x slower
+   * Reading is 1.6x slower
+   * Cold-writing is 173x slower    => Expected: dynamic memory allocation overhead.
+   * Warm-writing is 1.5x slower
+
+All this leads to a confirmation of the well-established result that in a single-threaded world, copy-on-write is a
+relatively lightweight abstraction from a CPU usage point of view, which means that it is worthwhile when large memory
+copies of immutable data would be otherwise needed.
