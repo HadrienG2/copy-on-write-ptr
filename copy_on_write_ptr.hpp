@@ -3,11 +3,11 @@
 
 #include <memory>
 
-#include "cow_ownership_flag.hpp"
+#include "cow_ownership_flags/thread_unsafe_flag.hpp"
 
 // The cow_ptr class implements copy-on-write semantics on top of std::shared_ptr
 template <typename T,
-          typename OwnershipFlag = cow_ownership_flag>
+          typename OwnershipFlag = cow_ownership_flags::thread_unsafe_flag>
 class copy_on_write_ptr {
    public:
       // === BASIC CLASS LIFECYCLE ===
