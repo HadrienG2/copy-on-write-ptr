@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 
-#include "cow_ptr.hpp"
+#include "copy_on_write_ptr.hpp"
 
 // === FORWARD DECLARATIONS ===
 
@@ -46,7 +46,7 @@ int main() {
    using Data = int;
    const Data typical_value = 42;
    using SharedPointer = std::shared_ptr<Data>;
-   using COWPointer = cow_ptr<Data>;
+   using COWPointer = copy_on_write_ptr<Data>;
    
    // Say hi :)
    std::cout << std::endl << "=== Microbenchmarking cow_ptr ===" << std::endl;
