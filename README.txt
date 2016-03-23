@@ -40,7 +40,7 @@ It should be noted that both of the data races above generally indicate an error
 to handle them would be a reasonable option. But if they are to be handled well, thread synchronization must be used.
 
 
-=== EXPLORING THE TRADEOFF ===
+=== EXPLORING THE DESIGN TRADEOFF ===
 
 To explore the design space for copy-on-write implementations, I decided to decouple the data ownership handling
 mechanism from the high-level CoW interface that is provided by cow_ptr. In this repository, you will find multiple
@@ -50,6 +50,9 @@ implementations of this mechanism:
 - An implementation using mutex synchronization to prevent concurrent ownership flag assignment and lazy copies
 - An implementation using atomics-based synchronization instead of mutexes, at a cost of some design complexity
 - An implementation using explicit memory ordering to try to accelerate atomics, at the cost of further complexity
+
+I initially tried to use std::once_flag as a copy-on-write ownership flag implementation, however its non-readable,
+non-writable, non-moveable and non-copyable semantics turned out to be too limited for my needs.
 
 These implementations may easily be compared from a performance and design complexity point of view: the thread-unsafe
 implementation can serve as a baseline for the best performance that one may expect from copy-on-write semantics, under
