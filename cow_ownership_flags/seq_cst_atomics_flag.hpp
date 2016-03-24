@@ -1,5 +1,5 @@
-#ifndef COW_OWNERSHIP_FLAG_H
-#define COW_OWNERSHIP_FLAG_H
+#ifndef SEQ_CST_ATOMICS_FLAG_H
+#define SEQ_CST_ATOMICS_FLAG_H
 
 #include <atomic>
 #include <cstdint>
@@ -12,21 +12,21 @@ namespace cow_ownership_flags {
       
          // Ownership flags may be initialized to a certain value without synchronization, as at construction time only
          // one thread has access to the active ownership flag.
-         cow_ownership_flag(bool initially_owned) : m_ownership_status{to_ownership_status(initially_owned)} { }
+         seq_cst_atomics_flag(bool initially_owned) : m_ownership_status{to_ownership_status(initially_owned)} { }
          
          
          // When we move-construct from an ownership flag rvalue, we may assume that no other thread has access to either
          // that rvalue or the active flag, and avoid using synchronization.
-         cow_ownership_flag(cow_ownership_flag && other) : m_ownership_status{other.unsynchronized_status()} { }
+         seq_cst_atomics_flag(seq_cst_atomics_flag && other) : m_ownership_status{other.unsynchronized_status()} { }
          
          
          // There's nothing special about deleting an ownership flag.
-         ~cow_ownership_flag() = default;
+         ~seq_cst_atomics_flag() = default;
          
          
          // When we move-assign an ownership flag rvalue, no other thread has access to that rvalue, so we can access it
          // without synchronizing. But the active flag may be shared with other threads, so we need write synchronization.
-         cow_ownership_flag & operator=(cow_ownership_flag && other) {
+         seq_cst_atomics_flag & operator=(seq_cst_atomics_flag && other) {
             set_ownership_status(other.unsynchronized_status());
          }
          
@@ -34,8 +34,8 @@ namespace cow_ownership_flags {
          // Ownership flags are not copyable. Proper CoW semantics would require clearing them upon copy,
          // which is at odds with normal copy semantics. It's better to throw a compiler error in this case,
          // and let the user write more explicit code.
-         cow_ownership_flag(const cow_ownership_flag &) = delete;
-         cow_ownership_flag & operator=(const cow_ownership_flag &) = delete;
+         seq_cst_atomics_flag(const seq_cst_atomics_flag &) = delete;
+         seq_cst_atomics_flag & operator=(const seq_cst_atomics_flag &) = delete;
          
          
          // Authoritatively mark the active memory block as owned/not owned by the active thread
