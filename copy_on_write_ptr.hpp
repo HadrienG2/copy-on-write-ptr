@@ -3,8 +3,6 @@
 
 #include <memory>
 
-#include "cow_ownership_flags/thread_unsafe_flag.hpp"
-
 // The cow_ptr class implements copy-on-write semantics on top of std::shared_ptr
 template <typename T,
           typename OwnershipFlag>

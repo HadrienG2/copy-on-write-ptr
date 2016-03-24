@@ -4,43 +4,43 @@ hadrien@pc-grasland:~/Bureau/Programmation/TestCoW$ g++ -O0 -std=c++11 bench_vs_
 [...]
 
 Creating 100000000 pointers from raw pointers
-With a raw shared_ptr, this operation takes 8.90243 s
-With cow_ptr, it takes 9.61892 s (1.08048x slower)
+With a raw shared_ptr, this operation takes 9.05853 s
+With cow_ptr, it takes 9.70459 s (1.07132x slower)
 
 Creating AND move-constructing 2500000000 pointers
-With a raw shared_ptr, this operation takes 287.83 s
-With cow_ptr, it takes 372.257 s (1.29332x slower)
+With a raw shared_ptr, this operation takes 285.148 s
+With cow_ptr, it takes 404.977 s (1.42023x slower)
 
 Copy-constructing 1000000000 pointers
-With a raw shared_ptr, this operation takes 40.6132 s
-With cow_ptr, it takes 51.7203 s (1.27349x slower)
+With a raw shared_ptr, this operation takes 48.1197 s
+With cow_ptr, it takes 52.9928 s (1.10127x slower)
 
 Copy-constructing AND move-assigning 5000000000 pointers
-With a raw shared_ptr, this operation takes 421.153 s
-With cow_ptr, it takes 475.942 s (1.13009x slower)
+With a raw shared_ptr, this operation takes 418.364 s
+With cow_ptr, it takes 491.536 s (1.1749x slower)
 
 Copy-assigning 64000000 pointers
-With a raw shared_ptr, this operation takes 0.761626 s
-With cow_ptr, it takes 1.04287 s (1.36926x slower)
+With a raw shared_ptr, this operation takes 0.750994 s
+With cow_ptr, it takes 1.04189 s (1.38734x slower)
 
-Reading from 1024000000 pointers
-With a raw shared_ptr, this operation takes 4.53096 s
-With cow_ptr, it takes 7.18967 s (1.58679x slower)
+Reading from 5000000000 pointers
+With a raw shared_ptr, this operation takes 21.9751 s
+With cow_ptr, it takes 35.1145 s (1.59792x slower)
 
 Performing 1920000000 pointer copies AND cold writes
-With a raw shared_ptr, this operation takes 26.1822 s
-With cow_ptr, it takes 595.358 s (22.7391x slower)
+With a raw shared_ptr, this operation takes 26.1059 s
+With cow_ptr, it takes 619.9 s (23.7456x slower)
 
 Performing 1920000000 warm pointer writes
-With a raw shared_ptr, this operation takes 14.4424 s
-With cow_ptr, it takes 21.1928 s (1.4674x slower)
+With a raw shared_ptr, this operation takes 8.97253 s
+With cow_ptr, it takes 21.1923 s (2.36191x slower)
 
 
 === RESULTS ANALYSIS ===
 
 When interpreting the results of this test, one should be mindful of three things:
    - The amount of operations is not constant, but optimized per-test to get a measurement uncertainty of a few percents
-   - The benchmark is built at -O0 optimization, and may not follow -O3 performance (which is much harder to benchmark)
+   - The benchmark is built at -O0 optimization, and may not follow -O3 performance (which cannot be microbenchmarked)
    - Some operations are composite, i.e. made of multiple inner operations that must be separated.
 
 Moves are an example of a composite operation: it is quite hard to build a stateless and lightweight benchmark which
@@ -49,59 +49,59 @@ measure the overhead of creating + moving a piece of data, then substract the ov
 
 This is how it is done for move-construction...
 
-   shared_ptr creation takes 89.0ns
-   copy_on_write_ptr creation takes 96.2ns
-   shared_ptr creation and move-construction takes 116ns
-   copy_on_write_ptr creation and move-construction takes 149ns
+   shared_ptr creation takes 90.6ns
+   copy_on_write_ptr creation takes 97.0ns
+   shared_ptr creation and move-construction takes 114ns
+   copy_on_write_ptr creation and move-construction takes 162ns
    
    therefore,
    
-   shared_ptr move-construction takes 27ns
-   copy_on_write_ptr move-construction takes 53ns
+   shared_ptr move-construction takes 23ns
+   copy_on_write_ptr move-construction takes 65ns
    
-   hence the later is 2.0x slower
+   hence the later is 2.8x slower
 
 ...and for move-assignment:
 
-   shared_ptr copy-construction takes 40.6ns
-   copy_on_write_ptr copy-construction takes 51.7ns
-   shared_ptr copy-construction and move-assignment takes 84.2ns
-   copy_on_write_ptr copy-construction and move-assignment takes 95.2ns
+   shared_ptr copy-construction takes 48.1ns
+   copy_on_write_ptr copy-construction takes 53.0ns
+   shared_ptr copy-construction and move-assignment takes 83.7ns
+   copy_on_write_ptr copy-construction and move-assignment takes 98.3ns
    
    therefore,
    
-   shared_ptr move-assignment takes 44ns
-   copy_on_write_ptr move-assignment takes 44ns
+   shared_ptr move-assignment takes 35.6ns
+   copy_on_write_ptr move-assignment takes 45.3ns
    
-   hence the later is 1.0x slower
+   hence the later is 1.3x slower
 
 Finally, by the very nature of the copy-on-write abstraction, cold writes may also only be measured in a composite way:
 
-   shared_ptr copy-assignment takes 11.9ns
+   shared_ptr copy-assignment takes 11.7ns
    copy_on_write_ptr copy-assignment takes 16.3ns
    shared_ptr copy-assignment and cold write takes 13.6ns
-   copy_on_write_ptr copy-assignment and cold write takes 310ns
+   copy_on_write_ptr copy-assignment and cold write takes 323ns
    
    therefore,
    
-   shared_ptr cold write takes 1.7ns
-   copy_on_write_ptr cold write takes 294ns
+   shared_ptr cold write takes 1.9ns
+   copy_on_write_ptr cold write takes 307ns
    
-   hence the later is 173x slower
+   hence the later is 161x slower
 
 
 === CONCLUSIONS ===
 
 In terms of elementary operations, before compiler optimization kicks in...
    * Creation from a raw pointer is 1.1x slower
-   * Move-constructing is 2.0x slower
-   * Copy-constructing is 1.3x slower
-   * Moving is 1.0x slower
+   * Move-constructing is 2.8x slower
+   * Copy-constructing is 1.1x slower
+   * Moving is 1.3x slower
    * Copying is 1.4x slower
    * Reading is 1.6x slower
-   * Cold-writing is 173x slower    => Expected: dynamic memory allocation overhead.
-   * Warm-writing is 1.5x slower
+   * Cold-writing is 161x slower    => EXPECTED: Dynamic memory allocation overhead.
+   * Warm-writing is 2.4x slower
 
-All this leads to a confirmation of the well-established result that in a single-threaded world, copy-on-write is a
-relatively lightweight abstraction from a CPU usage point of view, which means that it is worthwhile when large memory
-copies of immutable data would be otherwise needed.
+This sets some expectations on how much performance may be expected from thread-safe copy-on-write implementations,
+when measured in the same way. It also highlights the well-known fact that for scenarios where writes are infrequent,
+copy-on-write of large objects remains quite efficient as a memory usage optimization.

@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "copy_on_write_ptr.hpp"
+#include "cow_ownership_flags/thread_unsafe_flag.hpp"
 #include "shared.hpp"
 
 // === FORWARD DECLARATIONS ===
@@ -137,7 +138,7 @@ int main() {
    
    // === PART 6 : READ DATA ===
    
-   const size_t read_amount = 1000 * 1000 * 1024;
+   const size_t read_amount = 1000ULL * 1000ULL * 1000ULL * 5ULL;
    std::cout << std::endl << "Reading from " << read_amount << " pointers" << std::endl;
    {
       const SharedPointer source_shptr{std::make_shared<Data>(typical_value)};
