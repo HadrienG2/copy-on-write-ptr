@@ -1,0 +1,100 @@
+=== MICROBENCHMARK : THREAD-UNSAFE COW POINTER VS MUTEX-PROTECTED VERSION ===
+
+hadrien@pc-grasland:~/Bureau/Programmation/TestCoW$ g++ -O0 -std=c++11 bench_unsafe_vs_other.cpp -o bench_unsafe_vs_other.bin
+[...]
+
+Creating 100000000 pointers from raw pointers
+With a thread-unsafe implementation, this operation takes 10.0881 s
+With the tested implementation, it takes 10.5088 s (1.0417x slower)
+
+Creating AND move-constructing 2500000000 pointers
+With a thread-unsafe implementation, this operation takes 381.738 s
+With the tested implementation, it takes 403.743 s (1.05764x slower)
+
+Copy-constructing 1000000000 pointers
+With a thread-unsafe implementation, this operation takes 48.0419 s
+With the tested implementation, it takes 54.8719 s (1.14217x slower)
+
+Copy-constructing AND move-assigning 5000000000 pointers
+With a thread-unsafe implementation, this operation takes 480.287 s
+With the tested implementation, it takes 596.449 s (1.24186x slower)
+
+Copy-assigning 64000000 pointers
+With a thread-unsafe implementation, this operation takes 1.06318 s
+With the tested implementation, it takes 2.27327 s (2.13819x slower)
+
+Reading from 5000000000 pointers
+With a thread-unsafe implementation, this operation takes 35.1963 s
+With the tested implementation, it takes 35.4005 s (1.0058x slower)
+
+Performing 1920000000 pointer copies AND cold writes
+With a thread-unsafe implementation, this operation takes 603.847 s
+With the tested implementation, it takes 696.199 s (1.15294x slower)
+
+Performing 1920000000 warm pointer writes
+With a thread-unsafe implementation, this operation takes 21.2827 s
+With the tested implementation, it takes 61.7025 s (2.89919x slower)
+
+
+=== RESULTS ANALYSIS ===
+
+For details on the methodology being used here, please refer to the comparison between thread-unsafe
+copy-on-write and raw shared_ptrs.
+
+Move-construction:
+
+   thread-unsafe creation takes 101ns
+   mutex-based creation takes 105ns
+   thread-unsafe creation and move-construction takes 153ns
+   mutex-based creation and move-construction takes 161ns
+   
+   therefore,
+   
+   thread-unsafe move-construction takes 52ns
+   mutex-based move-construction takes 56ns
+   
+   hence the later is 1.1x slower
+
+Move-assignment:
+
+   thread-unsafe copy-construction takes 48.0ns
+   mutex-based copy-construction takes 54.9ns
+   thread-unsafe copy-construction and move-assignment takes 96.1ns
+   mutex-based copy-construction and move-assignment takes 119ns
+   
+   therefore,
+   
+   thread-unsafe move-assignment takes 48.1ns
+   mutex-based move-assignment takes 64ns
+   
+   hence the later is 1.3x slower
+
+Cold writes:
+
+   thread-unsafe copy-assignment takes 16.6ns
+   mutex-based copy-assignment takes 35.5ns
+   thread-unsafe copy-assignment and cold write takes 315ns
+   mutex-based copy-assignment and cold write takes 363ns
+   
+   therefore,
+   
+   thread-unsafe cold write takes 298ns
+   mutex-based cold write takes 327ns
+   
+   hence the later is 1.1x slower
+
+
+=== CONCLUSIONS ===
+
+In terms of elementary operations, before compiler optimization kicks in...
+   * Creation from a raw pointer is 1.0x slower
+   * Move-constructing is 1.1x slower
+   * Copy-constructing is 1.1x slower
+   * Moving is 1.3x slower
+   * Copying is 2.1x slower
+   * Reading is 1.0x slower
+   * Cold-writing is 1.1x slower
+   * Warm-writing is 2.9x slower
+
+The extra overhead upon copy assignment and warm writes is perhaps problematic, so we would like to use a cheaper
+synchronization primitive than a mutex there.
