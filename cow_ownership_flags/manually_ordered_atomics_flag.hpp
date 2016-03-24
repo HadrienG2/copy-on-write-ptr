@@ -53,7 +53,7 @@ namespace cow_ownership_flags {
             m_ownership_status.compare_exchange_strong(previous_ownership,
                                                        AcquiringOwnership,
                                                        std::memory_order_acq_rel,
-                                                       std::memory_order_consume);
+                                                       std::memory_order_acquire);
             
             // Act according to the previous ownership status
             switch(previous_ownership) {

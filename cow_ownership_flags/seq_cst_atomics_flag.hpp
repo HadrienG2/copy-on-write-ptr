@@ -6,7 +6,7 @@
 
 namespace cow_ownership_flags {
 
-   // This implementation of the copy-on-write ownership flag uses sequentially consistent atomics to achieve thread safety
+   // This implementation of the copy-on-write ownership flag uses manually ordered atomics to achieve thread safety
    class seq_cst_atomics_flag {
       public:
       
@@ -50,8 +50,7 @@ namespace cow_ownership_flags {
          void acquire_ownership_once(Callable && acquisition_routine) {
             // Try to switch the ownership status from NotOwner to AcquiringOwnership, and tell previous status
             OwnershipStatusType previous_ownership = NotOwner;
-            m_ownership_status.compare_exchange_strong(previous_ownership,
-                                                       AcquiringOwnership);
+            m_ownership_status.compare_exchange_strong(previous_ownership, AcquiringOwnership);
             
             // Act according to the previous ownership status
             switch(previous_ownership) {
@@ -81,21 +80,20 @@ namespace cow_ownership_flags {
          OwnershipStatusType unsynchronized_status() { return m_ownership_status.load(std::memory_order_relaxed); }
          
          void set_ownership_status(const OwnershipStatusType desired_ownership) {
-            OwnershipStatusType current_ownership;
+            OwnershipStatusType current_ownership = m_ownership_status.load();
             
             do {
                // If we are currently acquiring resource ownership, wait for that operation to complete
-               do {
+               while(current_ownership == AcquiringOwnership) {
                   current_ownership = m_ownership_status.load();
-               } while(current_ownership == AcquiringOwnership);
+               }
             
                // Once that is done, try to swap in the new resource ownership status
-            } while(m_ownership_status.compare_exchange_weak(current_ownership,
-                                                             desired_ownership));
+            } while(m_ownership_status.compare_exchange_weak(current_ownership, desired_ownership));
          }
          
    };
-   
+
 }
 
 #endif
