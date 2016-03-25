@@ -8,7 +8,12 @@ writing triggers a lazy deep copy of the underlying data block. Effectively, cop
 something which offers the memory efficiency benefits of a shared_ptr<const T>, but can gracefully degrade into a
 mutable std::unique_ptr<T> to a private data block as needed.
 
-Copy-on-write semantics are appropriate in scenarios where...
+There is a widespread belief in the C++ community that the innovations brought forth by C++11, in particular move
+semantics, have rendered copy-on-write obsolete. This belief has led, for example, a similar effort to be rejected by
+the Boost community. However, this is not entirely accurate. C++11 has not rendered copy-on-write obsolete, it has
+simply proposed a better solution to a *subset* of the problems which required CoW usage in the past.
+
+Copy-on-write semantics remain appropriate in scenarios where...
    - Multiple threads need access to a large piece of data as if they owned a private copy of it.
    - It is not known in advance whether threads will need to mutate their "cheap copy" of the data.
    - The probability of data mutation is low enough for the memory efficiency gains to offset the CPU efficiency losses.
@@ -18,7 +23,7 @@ Copy-on-write semantics are appropriate in scenarios where...
 
 Writing to copy-on-write data relies on an underlying notion of data ownership:
    - If the active pointer has ownership of the data block it points to, it can perform the write directly
-   - If it does not have ownership, it must create a new data block and write there
+   - If it does not have ownership, it must create a new data block (which it will own) and write there
 
 In a single-threaded world, this may be implemented simply using a boolean dirty flag which tells whether a cow_ptr
 owns the data it points to. A lazy copy will then occur when a write is attempted and this flag is false, setting
