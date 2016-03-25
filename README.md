@@ -1,4 +1,4 @@
-=== THE COPY_ON_WRITE_PTR PROJECT ===
+# The copy_on_write_ptr project
 
 The idea behind copy_on_write_ptr is to provide users with a relatively straightforward way to use std::shared_ptr with
 copy-on-write (CoW) semantics.
@@ -14,14 +14,16 @@ the Boost community. However, this is not entirely accurate. C++11 has not rende
 simply proposed a better solution to a *subset* of the problems which required CoW usage in the past.
 
 Copy-on-write semantics remain appropriate in scenarios where...
+
    - Multiple threads need access to a large piece of data as if they owned a private copy of it.
    - It is not known in advance whether threads will need to mutate their "cheap copy" of the data.
    - The probability of data mutation is low enough for the memory efficiency gains to offset the CPU efficiency losses.
 
 
-=== COPY ON WRITE IN A SINGLE-THREADED WORLD ===
+# Copy-on-write in a single-threaded world
 
 Writing to copy-on-write data relies on an underlying notion of data ownership:
+
    - If the active pointer has ownership of the data block it points to, it can perform the write directly
    - If it does not have ownership, it must create a new data block (which it will own) and write there
 
@@ -30,11 +32,12 @@ owns the data it points to. A lazy copy will then occur when a write is attempte
 the flag to true along the way.
 
 
-=== COPY ON WRITE IN A MULTI-THREADED WORLD ===
+# Copy-on-write in a multithreaded world
 
 If thread safety is desired, then copy-on-write gets more complicated, because we need to handle two data races:
-   1/ Two threads attempt to write new values into CoW data at the same time, potentially causing multiple lazy copies.
-   2/ A thread attempts to assign a new value to the cow_ptr while another is performing a write to the contained data.
+
+   1. Two threads attempt to write new values into CoW data at the same time, potentially causing multiple lazy copies.
+   2. A thread attempts to assign a new value to the cow_ptr while another is performing a write to the contained data.
 
 Another data race that cannot be avoided in a library-based copy-on-write implementation is that writing to a cow_ptr
 potentially invalidates the address of the data it points to. Therefore, client threads should be very careful when
@@ -45,7 +48,7 @@ It should be noted that both of the data races above generally indicate an error
 to handle them would be a reasonable option. But if they are to be handled well, thread synchronization must be used.
 
 
-=== EXPLORING THE DESIGN TRADEOFF ===
+# Exploring the design tradeoff
 
 To explore the design space for copy-on-write implementations, I decided to decouple the data ownership handling
 mechanism from the high-level CoW interface that is provided by cow_ptr. In this repository, you will find multiple
