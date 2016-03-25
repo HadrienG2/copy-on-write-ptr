@@ -2,7 +2,7 @@
 
 #include "copy_on_write_ptr.hpp"
 #include "cow_ownership_flags/thread_unsafe_flag.hpp"
-#include "cow_ownership_flags/seq_cst_atomics_flag.hpp"
+#include "cow_ownership_flags/manually_ordered_atomics_flag.hpp"
 #include "shared.hpp"
 
 // === FORWARD DECLARATIONS ===
@@ -32,7 +32,7 @@ int main() {
 
    // Define our smart pointer types
    using UnsafePointer = copy_on_write_ptr<Data, cow_ownership_flags::thread_unsafe_flag>;
-   using TestedPointer = copy_on_write_ptr<Data, cow_ownership_flags::seq_cst_atomics_flag>;
+   using TestedPointer = copy_on_write_ptr<Data, cow_ownership_flags::manually_ordered_atomics_flag>;
    
    // Say hi :)
    std::cout << std::endl << "=== Microbenchmarking cow_ptr ===" << std::endl;
