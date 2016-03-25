@@ -1,0 +1,100 @@
+=== MICROBENCHMARK : THREAD-UNSAFE COW POINTER VS SEQUENTIALLY CONSISTENT ATOMICS ===
+
+hadrien@pc-grasland:~/Bureau/Programmation/TestCoW$ g++ -O0 -std=c++11 bench_unsafe_vs_other.cpp -o bench_unsafe_vs_other.bin
+[...]
+
+Creating 100000000 pointers from raw pointers
+With a thread-unsafe implementation, this operation takes 9.82543 s
+With the tested implementation, it takes 10.6042 s (1.07926x slower)
+
+Creating AND move-constructing 2500000000 pointers
+With a thread-unsafe implementation, this operation takes 405.151 s
+With the tested implementation, it takes 420.437 s (1.03773x slower)
+
+Copy-constructing 1000000000 pointers
+With a thread-unsafe implementation, this operation takes 47.3745 s
+With the tested implementation, it takes 56.2335 s (1.187x slower)
+
+Copy-constructing AND move-assigning 5000000000 pointers
+With a thread-unsafe implementation, this operation takes 460.931 s
+With the tested implementation, it takes 655.856 s (1.42289x slower)
+
+Copy-assigning 64000000 pointers
+With a thread-unsafe implementation, this operation takes 1.03478 s
+With the tested implementation, it takes 2.62275 s (2.5346x slower)
+
+Reading from 5000000000 pointers
+With a thread-unsafe implementation, this operation takes 35.1397 s
+With the tested implementation, it takes 35.1514 s (1.00033x slower)
+
+Performing 1920000000 pointer copies AND cold writes
+With a thread-unsafe implementation, this operation takes 626.467 s
+With the tested implementation, it takes 751.766 s (1.20001x slower)
+
+Performing 1920000000 warm pointer writes
+With a thread-unsafe implementation, this operation takes 21.1624 s
+With the tested implementation, it takes 58.2328 s (2.75171x slower)
+
+
+=== RESULTS ANALYSIS ===
+
+For details on the methodology being used here, please refer to the comparison between thread-unsafe
+copy-on-write and raw shared_ptrs.
+
+Move-construction:
+
+   thread-unsafe creation takes 98.3ns
+   seq_cst-based creation takes 106ns
+   thread-unsafe creation and move-construction takes 162ns
+   seq_cst-based creation and move-construction takes 168ns
+   
+   therefore,
+   
+   thread-unsafe move-construction takes 64ns
+   seq_cst-based move-construction takes 62ns
+   
+   hence the later is 1.0x slower
+
+Move-assignment:
+
+   thread-unsafe copy-construction takes 47.4ns
+   seq_cst-based copy-construction takes 56.3ns
+   thread-unsafe copy-construction and move-assignment takes 92.2ns
+   seq_cst-based copy-construction and move-assignment takes 132ns
+   
+   therefore,
+   
+   thread-unsafe move-assignment takes 45ns
+   seq_cst-based move-assignment takes 75ns
+   
+   hence the later is 1.7x slower
+
+Cold writes:
+
+   thread-unsafe copy-assignment takes 16.2ns
+   seq_cst-based copy-assignment takes 41.0ns
+   thread-unsafe copy-assignment and cold write takes 326ns
+   seq_cst-based copy-assignment and cold write takes 392ns
+   
+   therefore,
+   
+   thread-unsafe cold write takes 310ns
+   seq_cst-based cold write takes 351ns
+   
+   hence the later is 1.1x slower
+
+
+=== CONCLUSIONS ===
+
+In terms of elementary operations, before compiler optimization kicks in...
+   * Creation from a raw pointer is 1.1x slower    => Comparable to mutex
+   * Move-constructing is 1.0x slower              => Comparable to mutex
+   * Copy-constructing is 1.2x slower              => Comparable to mutex
+   * Moving is 1.7x slower                         => Slightly slower (1.3x for mutex)
+   * Copying is 2.5x slower                        => Slightly slower (2.3x for mutex)
+   * Reading is 1.0x slower                        => Comparable to mutex
+   * Cold-writing is 1.1x slower                   => Comparable to mutex
+   * Warm-writing is 2.8x slower                   => Comparable to mutex
+
+Sequentially consistent atomics bring no performance benefits with respect to mutexes, and are in some cases slightly
+slower. They do not appear to be worth the massive code complexity that they bring in this use case.
