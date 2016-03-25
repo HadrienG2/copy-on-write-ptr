@@ -93,10 +93,10 @@ namespace cow_ownership_flags {
                }
             
                // Once that is done, try to swap in the new resource ownership status
-            } while(m_ownership_status.compare_exchange_weak(current_ownership,
-                                                             desired_ownership,
-                                                             std::memory_order_acq_rel,
-                                                             std::memory_order_consume));
+            } while(!m_ownership_status.compare_exchange_weak(current_ownership,
+                                                              desired_ownership,
+                                                              std::memory_order_acq_rel,
+                                                              std::memory_order_consume));
          }
          
    };
