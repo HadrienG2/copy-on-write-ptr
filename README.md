@@ -5,7 +5,7 @@
 The idea behind `copy_on_write_ptr` is to provide users with a relatively straightforward way to use `std::shared_ptr`
 with copy-on-write (CoW) semantics.
 
-In CoW semantics, large pieces of data may be cheaply copied by reference as long as it is not written to, whereas
+In CoW semantics, large pieces of data may be cheaply "copied" by reference as long as they are not written to, whereas
 writing triggers a lazy deep copy of the underlying data block. Effectively, copy-on-write allows a client to have
 something which offers the memory efficiency benefits of an `std::shared_ptr<const T>`, but can gracefully degrade into
 an `std::unique_ptr<T>` to a private mutable data block as needed.
