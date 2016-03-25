@@ -41,8 +41,8 @@ If thread safety is desired, then copy-on-write gets more complicated, because w
    1. Two threads attempt to write new values into CoW data at the same time, potentially causing multiple lazy copies.
    2. A thread attempts to assign a new value to the pointer while another is performing a write to the contained data.
 
-Another data race that cannot be avoided (in a library-based copy-on-write implementation) is that writing to CoW data
-potentially invalidates the address of that data. Therefore, client threads should be very careful when holding
+Another data race that cannot be avoided (in a library-based copy-on-write implementation at least) is that writing to
+CoW data potentially invalidates the address of that data. Therefore, client threads should be very careful when holding
 long-lived references to CoW data that may be asynchronously written to. This is a general concern when using container
 libraries, though, so threaded code authors should be aware of it.
 
@@ -66,7 +66,7 @@ non-writable, non-moveable and non-copyable semantics turned out to be too limit
 
 These implementations may easily be compared from a performance and design complexity point of view: the thread-unsafe
 implementation can serve as a baseline for the best performance that one may expect from copy-on-write semantics, under
-disciplined single-threaded use, whereas the synchronized implementations represent different points on the design
-continuum between maximal performance and minimal design complexity.
+disciplined single-threaded use, whereas the synchronized implementations represent different points on the thread-safe
+design continuum between maximal performance and minimal design complexity.
 
 You will find the results of this comparison in the `bench_results/` subdirectory.
