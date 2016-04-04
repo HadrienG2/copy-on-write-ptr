@@ -20,30 +20,31 @@
 
 namespace cow_ownership_flags {
 
-   // This implementation of the copy-on-write ownership flag uses a mutex to achieve thread safety
+   // This implementation of the copy-on-write ownership flag uses a mutex to achieve thread safety.
    class mutex_flag {
       public:
       
-         // Ownership flags may be initialized to a certain value without synchronization, as at construction time only
-         // one thread has access to the active ownership flag.
+         // Ownership flags may be initialized to a certain value without synchronization, as at
+         // construction time only one thread has access to the active ownership flag.
          mutex_flag(bool initially_owned) : m_owned{initially_owned} { }
          
-         // When we move-construct from an ownership flag rvalue, we may assume that no other thread has access to either
-         // that rvalue or the active flag, and avoid using synchronization.
+         // When we move-construct from an ownership flag rvalue, we may assume that no other thread
+         // has access to either that rvalue or the active flag, and avoid using synchronization.
          mutex_flag(mutex_flag && other) : m_owned{other.m_owned} { }
          
          // There's nothing special about deleting an ownership flag.
          ~mutex_flag() = default;
          
-         // When we move-assign an ownership flag rvalue, no other thread has access to that rvalue, so we can access it
-         // without synchronizing. But the active flag may be shared with other threads, so we need write synchronization.
+         // When we move-assign an ownership flag rvalue, no other thread has access to that rvalue,
+         // so we can access it without read synchronization.
+         // But the active flag may be shared with other threads, so we need write synchronization.
          mutex_flag & operator=(mutex_flag && other) {
             set_ownership(other.m_owned);
          }
          
-         // Ownership flags are not copyable. Proper CoW semantics would require clearing them upon copy,
-         // which is at odds with normal copy semantics. It's better to throw a compiler error in this case,
-         // and let the user write more explicit code.
+         // Ownership flags are not copyable. Proper CoW semantics would require clearing them upon
+         // copy, which is at odds with normal copy semantics. It's better to throw a compiler error
+         // in this case, and let the user write more explicit code.
          mutex_flag(const mutex_flag &) = delete;
          mutex_flag & operator=(const mutex_flag &) = delete;
          
@@ -53,8 +54,8 @@ namespace cow_ownership_flags {
             m_owned = owned;
          }
       
-         // Acquire ownership of the active memory block once, using the provided resource acquisition routine,
-         // if that's not done already. Have other threads block during this process.
+         // Acquire ownership of the active memory block, using the provided resource acquisition
+         // routine, if that's not done already. Other threads should block during this process.
          template<typename Callable>
          void acquire_ownership_once(Callable && acquire) {
             std::lock_guard<std::mutex> lock(m_ownership_mutex);

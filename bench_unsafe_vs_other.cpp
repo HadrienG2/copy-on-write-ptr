@@ -32,11 +32,15 @@ void compare_it(Callable1 && unsafe_operation,
                 Callable2 && tested_operation,
                 const std::size_t amount) {
    const auto unsafe_duration = Shared::time_it(unsafe_operation, amount);
-   std::cout << "With a thread-unsafe implementation, this operation takes " << unsafe_duration.count() << " s" << std::endl;
+   std::cout << "With a thread-unsafe implementation, this operation takes "
+             << unsafe_duration.count() << " s"
+             << std::endl;
    
    const auto tested_duration = Shared::time_it(tested_operation, amount);
-   std::cout << "With the tested implementation, it takes " << tested_duration.count() << " s ("
-             << tested_duration.count() / unsafe_duration.count() << "x slower)" << std::endl;
+   std::cout << "With the tested implementation, it takes "
+             << tested_duration.count() << " s ("
+             << tested_duration.count() / unsafe_duration.count() << "x slower)"
+             << std::endl;
 }
 
 // === PERFORMANCE TEST BODY ===

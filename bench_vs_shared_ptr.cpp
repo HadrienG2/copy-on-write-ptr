@@ -32,11 +32,15 @@ void compare_it(Callable1 && shptr_operation,
                 Callable2 && cowptr_operation,
                 const std::size_t amount) {
    const auto shptr_duration = Shared::time_it(shptr_operation, amount);
-   std::cout << "With a raw shared_ptr, this operation takes " << shptr_duration.count() << " s" << std::endl;
+   std::cout << "With a raw shared_ptr, this operation takes "
+             << shptr_duration.count() << " s"
+             << std::endl;
    
    const auto cowptr_duration = Shared::time_it(cowptr_operation, amount);
-   std::cout << "With cow_ptr, it takes " << cowptr_duration.count() << " s ("
-             << cowptr_duration.count() / shptr_duration.count() << "x slower)" << std::endl;
+   std::cout << "With cow_ptr, it takes "
+             << cowptr_duration.count() << " s ("
+             << cowptr_duration.count() / shptr_duration.count() << "x slower)"
+             << std::endl;
 }
 
 // === PERFORMANCE TEST BODY ===

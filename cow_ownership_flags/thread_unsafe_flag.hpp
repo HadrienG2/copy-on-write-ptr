@@ -20,7 +20,7 @@
 
 namespace cow_ownership_flags {
 
-   // This implementation of the copy-on-write ownership flag makes no particular efforts to achieve thread safety
+   // This implementation of the copy-on-write ownership does not attempt to achieve thread safety
    class thread_unsafe_flag {
       public:
       
@@ -33,14 +33,14 @@ namespace cow_ownership_flags {
          // There's nothing special about deleting an ownership flag.
          ~thread_unsafe_flag() = default;
          
-         // Move-assign the flag. If thread safety is not desired, this is equivalent to move-initialization
+         // Move-assign the flag. Without thread safety, this is equivalent to move-construction.
          thread_unsafe_flag & operator=(thread_unsafe_flag && other) {
             set_ownership(other.m_owned);
          }
          
-         // Ownership flags are not copyable. Proper CoW semantics would require clearing them upon copy,
-         // which is at odds with normal copy semantics. It's better to throw a compiler error in this case,
-         // and let the user write more explicit code.
+         // Ownership flags are not copyable. Proper CoW semantics would require clearing them upon
+         // copy, which is at odds with normal copy semantics. It's better to throw a compiler error
+         // in this case, and let the user write more explicit code.
          thread_unsafe_flag(const thread_unsafe_flag &) = delete;
          thread_unsafe_flag & operator=(const thread_unsafe_flag &) = delete;
          
@@ -49,8 +49,9 @@ namespace cow_ownership_flags {
             m_owned = owned;
          }
       
-         // Acquire ownership of the active memory block once, using the provided resource acquisition routine,
-         // if that's not done already. Disregard the possibility that other threads may be doing the same thing.
+         // Acquire ownership of the active memory block, using the provided resource acquisition
+         // routine, if that's not done already.
+         // Disregard the possibility that other threads may be doing the same thing.
          template<typename Callable>
          void acquire_ownership_once(Callable && acquire) {
             if(!m_owned) {
